@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Tareas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+        }
+        .task-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .task-list li {
+            background-color: #fff;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-list li.pending {
+            background-color: yellow;
+        }
+        .task-list li.completed {
+            background-color: lightgreen;
+        }
+        .task-list li.overdue {
+            background-color: orange;
+        }
+        .task-actions button {
+            margin-left: 5px;
+        }
+        .form-container {
+            display: none;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+        .form-container input, .form-container textarea {
+            width: calc(100% - 22px);
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-container button {
+            padding: 10px 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestor de Tareas</h1>
+    <button id="addTaskBtn">Agregar Tarea</button>
+    <ul id="taskList" class="task-list"></ul>
+    <div id="formContainer" class="form-container">
+        <input type="hidden" id="taskId">
+        <input type="text" id="taskName" placeholder="Nombre de la tarea">
+        <textarea id="taskDescription" placeholder="Descripción de la tarea"></textarea>
+        <label for="taskEndDate">Fecha de finalización:</label>
+        <input type="date" id="taskEndDate">
+        <br>
+        <button id="saveTaskBtn">Guardar</button>
+        <button id="clearFormBtn">Borrar</button>
+        <button id="cancelBtn">Cancelar</button>
+    </div>
+    <script>
+        let tasks = [];
+        let taskIdCounter = 1;
+
+        document.getElementById('addTaskBtn').addEventListener('click', function() {
+            showForm();
+        });
+
+        document.getElementById('saveTaskBtn').addEventListener('click', function() {
+            saveTask();
+        });
+
+        document.getElementById('clearFormBtn').addEventListener('click', function() {
+            clearForm();
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', function() {
+            hideForm();
+        });
+
+        function showForm(task = null) {
+            document.getElementById('formContainer').style.display = 'block';
+            if (task) {
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('taskName').value = task.name;
+                document.getElementById('taskDescription').value = task.description;
+                document.getElementById('taskEndDate').value = task.endDate;
+            } else {
+                clearForm();
+            }
+        }
+
+        function hideForm() {
+            document.getElementById('formContainer').style.display = 'none';
+        }
+
+        function clearForm() {
+            document.getElementById('taskId').value = '';
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskDescription').value = '';
+            document.getElementById('taskEndDate').value = '';
+        }
+
+        function saveTask() {
+            const id = document.getElementById('taskId').value;
+            const name = document.getElementById('taskName').value;
+            const description = document.getElementById('taskDescription').value;
+            const endDate = document.getElementById('taskEndDate').value;
+
+            if (name === '' || description === '' || endDate === '') {
+                alert('Por favor, complete todos los campos.');
+                return;
+            }
+
+            const task = {
+                id: id ? parseInt(id) : taskIdCounter++,
+                name,
+                description,
+                startDate: new Date().toISOString().split('T')[0],
+                endDate,
+                status: 'Pendiente'
+            };
+
+            if (id) {
+                tasks = tasks.map(t => t.id === task.id ? task : t);
+            } else {
+                tasks.push(task);
+            }
+
+            renderTasks();
+            hideForm();
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+
+            tasks.forEach(task => {
+                const listItem = document.createElement('li');
+                listItem.className = getTaskStatus(task);
+                listItem.innerHTML = `
+                    <span>${task.name}</span>
+                    <div class="task-actions">
+                        <button onclick="completeTask(${task.id})">✔</button>
+                        <button onclick="editTask(${task.id})">✎</button>
+                        <button onclick="deleteTask(${task.id})">✖</button>
+                    </div>
+                `;
+                taskList.appendChild(listItem);
+            });
+
+            if (tasks.length === 0) {
+                const noTasksItem = document.createElement('li');
+                noTasksItem.textContent = 'No hay tareas pendientes';
+                taskList.appendChild(noTasksItem);
+            }
+        }
+
+        function completeTask(id) {
+            tasks = tasks.map(task => {
+                if (task.id === id) {
+                    task.status = 'Completada';
+                }
+                return task;
+            });
+            renderTasks();
+        }
+
+        function editTask(id) {
+            const task = tasks.find(task => task.id === id);
+            if (task) {
+                showForm(task);
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(task => task.id !== id);
+            renderTasks();
+        }
+
+        function getTaskStatus(task) {
+            const currentDate = new Date().toISOString().split('T')[0];
+            if (task.status === 'Completada') {
+                return 'completed';
+            } else if (task.endDate < currentDate) {
+                return 'overdue';
+            } else {
+                return 'pending';
+            }
+        }
+
+        renderTasks();
+    </script>
+</body>
+</html>
